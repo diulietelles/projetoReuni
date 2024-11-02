@@ -1,0 +1,249 @@
+<html>
+  <head>
+    <base href="." />
+    <title>Projeto Reuni</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        background-image: url('/a/73be3731-bc43-4a1c-82de-dad6e3f58677');
+        background-size: cover;
+        background-position: center;
+        font-family: 'Arial', sans-serif;
+      }
+
+      .login-container,
+      .mood-container,
+      .workspace {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        display: none;
+        width: 300px;
+        max-width: 90%;
+      }
+
+      .login-container.active,
+      .mood-container.active,
+      .workspace.active {
+        display: block;
+      }
+
+      .participant {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.3s ease;
+      }
+
+      .participant img {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .participant .emoji {
+        font-size: 24px;
+      }
+
+      .emoji-picker {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin: 20px 0;
+      }
+
+      .emoji-option {
+        font-size: 24px;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+      }
+
+      .emoji-option:hover {
+        background-color: #eee;
+      }
+
+      input,
+      button {
+        display: block;
+        width: 100%;
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+
+      button {
+        background: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #45a049;
+      }
+
+      .feedback {
+        color: red;
+        font-size: 14px;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container active">
+      <h2>Login Reuni</h2>
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Entrar</button>
+      <div class="feedback" id="loginFeedback"></div>
+    </div>
+
+    <div class="mood-container">
+      <h2>Como você está hoje?</h2>
+      <div class="emoji-picker">
+        <div class="emoji-option" onclick="selectMood('😊')">😊</div>
+        <div class="emoji-option" onclick="selectMood('😐')">😐</div>
+        <div class="emoji-option" onclick="selectMood('😢')">😢</div>
+        <div class="emoji-option" onclick="selectMood('😴')">😴</div>
+        <div class="emoji-option" onclick="selectMood('🤩')">🤩</div>
+        <div class="emoji-option" onclick="selectMood('😤')">😤</div>
+        <div class="emoji-option" onclick="selectMood('🤓')">🤓</div>
+        <div class="emoji-option" onclick="selectMood('😎')">😎</div>
+      </div>
+      <button onclick="proceedToWorkspace()">Confirmar</button>
+    </div>
+
+    <div class="workspace"></div>
+
+    <script>
+      const participants = new Map();
+      let currentUser = null;
+      let currentMood = null;
+
+      function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const feedback = document.getElementById('loginFeedback');
+
+        if (username && password) {
+          currentUser = username;
+          sessionStorage.setItem('username', username);
+          feedback.textContent = '';
+          document.querySelector('.login-container').classList.remove('active');
+          document.querySelector('.mood-container').classList.add('active');
+        } else {
+          feedback.textContent = 'Por favor, insira usuário e senha.';
+        }
+      }
+
+      function selectMood(emoji) {
+        currentMood = emoji;
+        document
+          .querySelector('.mood-container')
+          .querySelector('.feedback').textContent =
+          'Emoji selecionado: ' + emoji;
+      }
+
+      function proceedToWorkspace() {
+        if (currentMood) {
+          sessionStorage.setItem('mood', currentMood);
+          document.querySelector('.mood-container').classList.remove('active');
+          document.querySelector('.workspace').classList.add('active');
+          addParticipant(currentUser, currentMood);
+        } else {
+          alert('Escolha um emoji para continuar.');
+        }
+      }
+
+      function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        if (username && password) {
+          currentUser = username;
+          document.querySelector('.login-container').classList.remove('active');
+          document.querySelector('.mood-container').classList.add('active');
+        }
+      }
+
+      function selectMood(emoji) {
+        currentMood = emoji;
+        document.querySelector('.mood-container').classList.remove('active');
+        document.querySelector('.workspace').classList.add('active');
+        addParticipant(currentUser, currentMood);
+      }
+
+      function addParticipant(username, mood) {
+        const participant = document.createElement('div');
+        participant.className = 'participant';
+        participant.innerHTML = `
+        <div class="avatar">
+            <img src="https://via.placeholder.com/50" alt="${username}">
+            <span class="emoji">${mood}</span>
+        </div>
+    `;
+
+        participant.style.left = Math.random() * window.innerWidth + 'px';
+        participant.style.top = Math.random() * window.innerHeight + 'px';
+
+        document.querySelector('.workspace').appendChild(participant);
+        participants.set(username, participant);
+
+        if (username === currentUser) {
+          setupMovement(participant);
+        }
+      }
+
+      function setupMovement(element) {
+        const speed = 10;
+        let posX = parseInt(element.style.left);
+        let posY = parseInt(element.style.top);
+
+        document.addEventListener('keydown', (e) => {
+          switch (e.key) {
+            case 'ArrowLeft':
+              posX -= speed;
+              break;
+            case 'ArrowRight':
+              posX += speed;
+              break;
+            case 'ArrowUp':
+              posY -= speed;
+              break;
+            case 'ArrowDown':
+              posY += speed;
+              break;
+          }
+          element.style.left = posX + 'px';
+          element.style.top = posY + 'px';
+        });
+      }
+
+      // Simular outros participantes para demonstração
+      setTimeout(() => {
+        if (currentUser) {
+          const demoUsers = ['Alice', 'Bob', 'Charlie'];
+          const demoMoods = ['😊', '🤩', '😎'];
+          demoUsers.forEach((user, i) => {
+            if (user !== currentUser) {
+              addParticipant(user, demoMoods[i]);
+            }
+          });
+        }
+      }, 2000);
+    </script>
+  </body>
+</html>
